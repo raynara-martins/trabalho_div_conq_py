@@ -1,4 +1,3 @@
-# src/strassen.py
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -54,7 +53,6 @@ def mul_strassen(A: Matrix, B: Matrix, cutoff: int = 64, stats: Optional[Strasse
     if stats is None:
         stats = StrassenStats()
 
-    # Padding caso n não seja potência de 2
     m = next_power_of_two(n)
     if m != n:
         A_pad = pad_to_size(A, m)
@@ -63,7 +61,6 @@ def mul_strassen(A: Matrix, B: Matrix, cutoff: int = 64, stats: Optional[Strasse
         C = crop(C_pad, n)
         return C, stats
 
-    # Já é potência de 2
     C = _strassen_rec(A, B, cutoff, stats)
     return C, stats
 
@@ -79,28 +76,18 @@ def _strassen_rec(A: Matrix, B: Matrix, cutoff: int, stats: StrassenStats) -> Ma
     stats.calls += 1
     n = len(A)
 
-    # Caso base: 1x1 ou limiar
     if n == 1:
         return [[A[0][0] * B[0][0]]]
 
     if n <= cutoff:
         return mul_classic(A, B)
 
-    # Medir somente o "overhead estrutural": split + add/sub + combine
     t0 = perf_counter()
 
-    # 1) Divide em quadrantes
     A11, A12, A21, A22 = split(A)
     B11, B12, B21, B22 = split(B)
 
-    # 2) Preparar as somas/subtrações (Strassen)
-    # M1 = (A11 + A22) * (B11 + B22)
-    # M2 = (A21 + A22) * B11
-    # M3 = A11 * (B12 - B22)
-    # M4 = A22 * (B21 - B11)
-    # M5 = (A11 + A12) * B22
-    # M6 = (A21 - A11) * (B11 + B12)
-    # M7 = (A12 - A22) * (B21 + B22)
+
     A11_plus_A22 = add(A11, A22)
     B11_plus_B22 = add(B11, B22)
 
@@ -118,7 +105,6 @@ def _strassen_rec(A: Matrix, B: Matrix, cutoff: int, stats: StrassenStats) -> Ma
 
     stats.split_combine_time += perf_counter() - t0
 
-    # 3) As 7 multiplicações recursivas (contabilizam calls dentro delas)
     M1 = _strassen_rec(A11_plus_A22, B11_plus_B22, cutoff, stats)
     M2 = _strassen_rec(A21_plus_A22, B11, cutoff, stats)
     M3 = _strassen_rec(A11, B12_minus_B22, cutoff, stats)
@@ -127,11 +113,6 @@ def _strassen_rec(A: Matrix, B: Matrix, cutoff: int, stats: StrassenStats) -> Ma
     M6 = _strassen_rec(A21_minus_A11, B11_plus_B12, cutoff, stats)
     M7 = _strassen_rec(A12_minus_A22, B21_plus_B22, cutoff, stats)
 
-    # 4) Combinar quadrantes do resultado:
-    # C11 = M1 + M4 - M5 + M7
-    # C12 = M3 + M5
-    # C21 = M2 + M4
-    # C22 = M1 - M2 + M3 + M6
     t1 = perf_counter()
 
     C11 = add(sub(add(M1, M4), M5), M7)

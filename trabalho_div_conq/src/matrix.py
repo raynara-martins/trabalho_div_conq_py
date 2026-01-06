@@ -1,10 +1,7 @@
-# src/matrix.py
 from __future__ import annotations
-
 from typing import List, Tuple
 
 Matrix = List[List[int]]
-
 
 def zeros(n: int) -> Matrix:
     """Cria uma matriz n x n preenchida com 0."""

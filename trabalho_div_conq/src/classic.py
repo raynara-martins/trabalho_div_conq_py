@@ -1,4 +1,3 @@
-# src/classic.py
 from __future__ import annotations
 
 from typing import List
@@ -22,7 +21,6 @@ def mul_classic(A: Matrix, B: Matrix) -> Matrix:
 
     C = zeros(n)
 
-    # Laços aninhados (i, j, k) - forma mais direta
     for i in range(n):
         Ai = A[i]
         Ci = C[i]
